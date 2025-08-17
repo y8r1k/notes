@@ -88,7 +88,7 @@ func (a *App) handleNoteGET(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleNotePOST(w http.ResponseWriter, r *http.Request) {
-	const op = "internal.http-server.handlers.HandleAllNoteGET"
+	const op = "internal.http-server.handlers.handleNotePOST"
 
 	// Decode data from body
 	defer r.Body.Close()
@@ -181,7 +181,7 @@ func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleNoteDELETE(w http.ResponseWriter, r *http.Request) {
-	const op = "internal.http-server.handlers.handleNoteGET"
+	const op = "internal.http-server.handlers.handleNoteDELETE"
 
 	// Getting id from url
 	parts := strings.Split(r.URL.Path, "/")

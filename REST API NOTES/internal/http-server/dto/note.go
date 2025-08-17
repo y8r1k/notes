@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// Не используется, надо будет убрать
 type NoteResponse struct {
 	ID          int64      `json:"id"`
 	Title       string     `json:"title"`
