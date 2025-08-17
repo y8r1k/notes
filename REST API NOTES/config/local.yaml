@@ -1,0 +1,7 @@
+db_postgres:
+  user: "gonotes"
+  password: "123456789"
+  dbname: "notes"
+  sslmode: "disable"
+http_server:
+  addres: ":8080"

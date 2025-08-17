@@ -1,0 +1,54 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go build output
+/bin/
+/build/
+/dist/
+/*.exe
+/*.out
+
+# IDE / Editor stuff
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Coverage
+*.cover
+*.cov
+*.prof
+
+# Configs
+*.env
+.env.*
+config.yaml
+
+# Database storage (если локально хранишь SQLite или дампы)
+*.db
+*.sqlite
+/storage/
+
+# Go modules cache (не нужно в git)
+vendor/
+
+# Temporary files
+tmp/
+*.tmp
+
+# Зависимости утилит
+/go.work
+/go.work.sum
