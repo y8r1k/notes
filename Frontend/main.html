@@ -72,8 +72,11 @@
     }
 
     function escapeQuotes(str) {
-      return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    }
+      return str
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/\n/g, '\\n');   // <-- добавь это
+}
 
     async function createNote(note) {
       await fetch(`${API}/`, {
