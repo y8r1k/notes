@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"notes/internal/http-server/dto"
-	"notes/internal/storage/postgres"
+	"notes/internal/storage"
 	"os"
 	"strconv"
 	"strings"
 )
 
 type App struct {
-	Storage *postgres.Storage
+	Storage storage.NoteStore
 }
 
 func (a *App) HandleAllNoteGET(w http.ResponseWriter, r *http.Request) {
