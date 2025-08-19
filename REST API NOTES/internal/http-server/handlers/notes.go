@@ -146,8 +146,6 @@ func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Decode data from body
-	defer r.Body.Close()
-
 	var changingNote dto.ChangeNotePUTRequest
 
 	defer r.Body.Close()
