@@ -20,5 +20,6 @@ cd notes
 2. Сборка:
 
 ```bash
-go build -o bin/notes.exe cmd/notes/main.go
+go build -o bin/notes cmd/notes/main.go
+CONFIG_PATH=./config/local.yaml ./bin/notes
 ```

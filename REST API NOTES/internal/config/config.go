@@ -24,16 +24,15 @@ type DBConfig struct {
 }
 
 func MustLoad() *Config {
-	// Получаем путь до конфиг-файла из env-переменной CONFIG_PATH
-	// configPath := os.Getenv("CONFIG_PATH")
-	configPath := `C:\Users\NoRoot\Прога\projects\Practice\Golang\Practice by Chatgpt\8. Application architecture\REST API NOTES\config\local.yaml`
+	// Getting CONFIG_PATH
+	configPath := os.Getenv("CONFIG_PATH")
 
 	if configPath == "" {
 		fmt.Fprintf(os.Stderr, "CONFIG_PATH environment variable is not set")
 		os.Exit(1)
 	}
 
-	// Проверяем существование конфиг-файла
+	// Check existing CONFIG_PATH
 	if _, err := os.Stat(configPath); err != nil {
 		fmt.Fprintf(os.Stderr, "error opening config file: %s", err)
 		os.Exit(1)
