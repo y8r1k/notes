@@ -8,9 +8,9 @@
 *.out
 
 # Go build output
-/bin/
-/build/
-/dist/
+bin/
+build/
+dist/
 /*.exe
 /*.out
 
