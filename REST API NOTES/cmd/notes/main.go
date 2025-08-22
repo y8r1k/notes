@@ -1,44 +1,48 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 	"net/http"
 	"notes/internal/config"
 	"notes/internal/http-server/handlers"
 	"notes/internal/http-server/middlewares/cors"
+	"notes/internal/logger/sl"
 	"notes/internal/storage/postgres"
 	"os"
 )
 
 func main() {
-	// Конфиг
 	cfg := config.MustLoad()
 
-	// Подключение Postgres
+	log := sl.SetupLogger(cfg.Env)
+
+	log.Info("starting notes service", slog.String("env", cfg.Env))
+
 	storage, err := postgres.New(cfg.DBConfig)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error of connecting DB: %v\n", err)
+		log.Error("failed to connect DB", sl.Err(err))
 		os.Exit(1)
 	}
-
 	defer storage.Close()
 
-	// Инициализация сервера
-	app := handlers.App{Storage: storage}
+	log.Info("database connected")
 
+	app := handlers.App{Storage: storage, Log: log}
 	mux := http.NewServeMux()
-
-	// Handlers
 	mux.HandleFunc("/notes/", app.HandleNoteRequest)
 	mux.HandleFunc("/notes", app.HandleAllNoteGET)
 
-	// Middlewares
 	handler := cors.WithCORS(mux)
 
-	// Запуск сервера
-	fmt.Println("Сервер запускается...")
-	err = http.ListenAndServe(cfg.HTTPServer.Addres, handler)
-	if err != nil {
-		fmt.Println("Error starting the server:", err)
+	log.Info("launching server", slog.String("address", cfg.HTTPServer.Addres))
+	srv := &http.Server{
+		Addr:    cfg.HTTPServer.Addres,
+		Handler: handler,
 	}
+
+	if err := srv.ListenAndServe(); err != nil {
+		log.Error("failed to start server", sl.Err(err))
+	}
+
+	log.Error("server stopped")
 }

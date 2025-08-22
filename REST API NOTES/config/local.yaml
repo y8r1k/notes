@@ -1,3 +1,4 @@
+env: "local" # local, dev, prod
 db_postgres:
   user: "gonotes"
   password: "123456789"

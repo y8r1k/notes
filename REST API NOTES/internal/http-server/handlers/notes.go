@@ -2,55 +2,81 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"notes/internal/http-server/dto"
+	"notes/internal/logger/sl"
 	"notes/internal/storage"
-	"os"
 	"strconv"
 	"strings"
 )
 
 type App struct {
 	Storage storage.NoteStore
+	Log     *slog.Logger
 }
 
 func (a *App) HandleAllNoteGET(w http.ResponseWriter, r *http.Request) {
 	const op = "internal.http-server.handlers.HandleAllNoteGET"
 
-	// Getting data from db
+	log := a.Log.With(
+		slog.String("op", op),
+	)
+
+	log.Debug("incoming request",
+		slog.String("method", r.Method),
+		slog.String("path", r.URL.Path),
+	)
+
+	// Get data from db
 	notesDomain, err := a.Storage.GETAllNotes()
 	if err != nil {
-		// Здесь по хорошему нужно добавить обработку
-		// Пока сделан общий вариант
-		fmt.Fprintf(os.Stderr, "%s: database error: %v\n", op, err)
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		log.Error("db: get notes failed",
+			sl.Err(err),
+		)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	// Converting data to response
+	// Convert data to response
 	notesToResponse := make([]dto.NoteResponse, len(notesDomain))
 	for i, note := range notesDomain {
 		notesToResponse[i] = dto.DomainToResponse(note)
 	}
 
-	// Marshaling data
+	// Marshal data
 	b, err := json.Marshal(notesToResponse)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: failed to marshaling %v\n", op, err)
+		log.Error("failed to marshal response",
+			sl.Err(err),
+		)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+
+	// Write response
 	w.Write(b)
 }
 
 func (a *App) handleNoteGET(w http.ResponseWriter, r *http.Request) {
 	const op = "internal.http-server.handlers.handleNoteGET"
 
-	// Getting id from url
+	log := a.Log.With(
+		slog.String("op", op),
+	)
+
+	log.Debug("incoming request",
+		slog.String("method", r.Method),
+		slog.String("path", r.URL.Path),
+	)
+
+	// Get id from url
 	parts := strings.Split(r.URL.Path, "/")
 
 	if len(parts) != 3 || parts[1] != "notes" {
-		fmt.Fprintf(os.Stderr, "%s: url params error %q:", op, r.URL.Path)
+		log.Error("invalid URL",
+			slog.String("path", r.URL.Path),
+		)
 		http.Error(w, "Invalid URL", http.StatusBadRequest)
 		return
 	}
@@ -58,30 +84,37 @@ func (a *App) handleNoteGET(w http.ResponseWriter, r *http.Request) {
 	idStr := parts[2]
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: parse error %q: %v\n", op, idStr, err)
+		log.Error("invalid id",
+			slog.String("id", idStr),
+			sl.Err(err),
+		)
 		http.Error(w, "ID must be a number", http.StatusBadRequest)
 		return
 	}
 
-	// Getting data from db
+	// Get data from db
 	noteDomain, err := a.Storage.GETNote(id)
 	if err != nil {
-		// Здесь по хорошему нужно добавить обработку
-		// Ошибка запроса: такого id не сущесвует
-		// Пока сделан общий вариант
-		fmt.Fprintf(os.Stderr, "%s: database error: %v\n", op, err)
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		// Здесь по хорошему нужно добавить обработку ошибки ErrNoteNotFound
+		log.Error("db: get note failed",
+			slog.Int64("id", id),
+			sl.Err(err),
+		)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	// Converting data to response
+	// Convert data to response
 	noteToResponse := dto.DomainToResponse(noteDomain)
 
-	// Marshaling data
+	// Marshal data
 	b, err := json.Marshal(noteToResponse)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: failed to marshaling %v\n", op, err)
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		log.Error("failed to marshal response",
+			slog.Int64("id", id),
+			sl.Err(err),
+		)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	w.Write(b)
@@ -90,35 +123,51 @@ func (a *App) handleNoteGET(w http.ResponseWriter, r *http.Request) {
 func (a *App) handleNotePOST(w http.ResponseWriter, r *http.Request) {
 	const op = "internal.http-server.handlers.handleNotePOST"
 
-	// Decode data from body
-	defer r.Body.Close()
+	log := a.Log.With(
+		slog.String("op", op),
+	)
 
+	log.Debug("incoming request",
+		slog.String("method", r.Method),
+		slog.String("path", r.URL.Path),
+	)
+
+	// Decode data from body
 	var newNote dto.CreateNotePOSTRequest
 
+	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(&newNote); err != nil {
-		fmt.Fprintf(os.Stderr, "%s: failed to decode data: %v\n", op, err)
+		log.Error("failed to decode data",
+			sl.Err(err),
+		)
 		http.Error(w, "Bad JSON data", http.StatusBadRequest)
 		return
 	}
 
-	// Getting data from db
+	// Create note-record in db
 	noteDomain, err := a.Storage.POSTNote(newNote.CreateRequestToDomain())
 	if err != nil {
-		// Здесь по хорошему нужно добавить обработку
-		// Пока сделан общий вариант
-		fmt.Fprintf(os.Stderr, "%s: database error: %v\n", op, err)
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		// здесь можно отдельно обрабатывать ErrNoteExists
+		log.Error("db: create note failed", sl.Err(err))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	// Converting data to response
+	log.Info("note created",
+		slog.Int64("id", noteDomain.ID),
+	)
+
+	// Convert data to response
 	noteToResponse := dto.DomainToResponse(noteDomain)
 
-	// Marshaling data
+	// Marshal data
 	resultNoteByte, err := json.Marshal(noteToResponse)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: failed to adding note: %v\n", op, err)
-		http.Error(w, "Bad JSON data", http.StatusBadRequest)
+		log.Error("failed to marshal response",
+			slog.Int64("id", noteDomain.ID),
+			sl.Err(err),
+		)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -128,11 +177,22 @@ func (a *App) handleNotePOST(w http.ResponseWriter, r *http.Request) {
 func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 	const op = "internal.http-server.handlers.handleNotePUT"
 
-	// Getting id from url
+	log := a.Log.With(
+		slog.String("op", op),
+	)
+
+	log.Debug("incoming request",
+		slog.String("method", r.Method),
+		slog.String("path", r.URL.Path),
+	)
+
+	// Get id from url
 	parts := strings.Split(r.URL.Path, "/")
 
 	if len(parts) != 3 || parts[1] != "notes" {
-		fmt.Fprintf(os.Stderr, "%s: url params error %q:", op, r.URL.Path)
+		log.Error("invalid URL",
+			slog.String("path", r.URL.Path),
+		)
 		http.Error(w, "Invalid URL", http.StatusBadRequest)
 		return
 	}
@@ -140,7 +200,10 @@ func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 	idStr := parts[2]
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: parse error %q: %v\n", op, idStr, err)
+		log.Error("invalid id",
+			slog.String("id", idStr),
+			sl.Err(err),
+		)
 		http.Error(w, "ID must be a number", http.StatusBadRequest)
 		return
 	}
@@ -150,29 +213,40 @@ func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(&changingNote); err != nil {
-		fmt.Fprintf(os.Stderr, "%s: failed to decode data: %v\n", op, err)
+		log.Error("failed to decode data",
+			sl.Err(err),
+		)
 		http.Error(w, "Bad JSON data", http.StatusBadRequest)
 		return
 	}
 
-	// Getting data from db
+	// Change data in db
 	noteDomain, err := a.Storage.PUTNote(changingNote.ChangeRequestToDomain(id))
 	if err != nil {
-		// Здесь по хорошему нужно добавить обработку
-		// Пока сделан общий вариант
-		fmt.Fprintf(os.Stderr, "%s: database error: %v\n", op, err)
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		//  здесь можно отдельно обрабатывать ErrNoteNotFound и ErrNoteExists
+		log.Error("db: change note failed",
+			slog.Int64("id", id),
+			sl.Err(err),
+		)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	// Converting data to response
+	log.Info("note changed",
+		slog.Int64("id", noteDomain.ID),
+	)
+
+	// Convert data to response
 	noteToResponse := dto.DomainToResponse(noteDomain)
 
 	// Marshaling data
 	resultNoteByte, err := json.Marshal(noteToResponse)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: failed to marshaling data: %v\n", op, err)
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		log.Error("failed to marshal response",
+			slog.Int64("id", noteDomain.ID),
+			sl.Err(err),
+		)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	w.Write(resultNoteByte)
@@ -181,11 +255,22 @@ func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 func (a *App) handleNoteDELETE(w http.ResponseWriter, r *http.Request) {
 	const op = "internal.http-server.handlers.handleNoteDELETE"
 
-	// Getting id from url
+	log := a.Log.With(
+		slog.String("op", op),
+	)
+
+	log.Debug("incoming request",
+		slog.String("method", r.Method),
+		slog.String("path", r.URL.Path),
+	)
+
+	// Get id from url
 	parts := strings.Split(r.URL.Path, "/")
 
 	if len(parts) != 3 || parts[1] != "notes" {
-		fmt.Fprintf(os.Stderr, "%s: url params error %q:", op, r.URL.Path)
+		log.Error("invalid URL",
+			slog.String("path", r.URL.Path),
+		)
 		http.Error(w, "Invalid URL", http.StatusBadRequest)
 		return
 	}
@@ -193,21 +278,29 @@ func (a *App) handleNoteDELETE(w http.ResponseWriter, r *http.Request) {
 	idStr := parts[2]
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: parse error %q: %v\n", op, idStr, err)
+		log.Error("invalid id",
+			slog.String("id", idStr),
+			sl.Err(err),
+		)
 		http.Error(w, "ID must be a number", http.StatusBadRequest)
 		return
 	}
 
-	// Getting data from db
+	// Delete data from db
 	err = a.Storage.DELETENote(id)
 	if err != nil {
-		// Здесь по хорошему нужно добавить обработку
-		// Ошибка запроса: такого id не сущесвует
-		// Пока сделан общий вариант
-		fmt.Fprintf(os.Stderr, "%s: database error: %v\n", op, err)
-		http.Error(w, "Server error", http.StatusInternalServerError)
+		// здесь можно отдельно обрабатывать ErrNoteNotFound
+		log.Error("db: delete note failed",
+			slog.Int64("id", id),
+			sl.Err(err),
+		)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
+
+	log.Info("note deleted",
+		slog.Int64("id", id),
+	)
 
 	message := "Successful deletion"
 	result := []byte(message)

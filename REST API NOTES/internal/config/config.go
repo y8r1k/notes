@@ -1,13 +1,14 @@
 package config
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type Config struct {
+	Env        string `yaml:"env" env-default:"local" env-required:"true"`
 	DBConfig   `yaml:"db_postgres"`
 	HTTPServer `yaml:"http_server"`
 }
@@ -28,21 +29,19 @@ func MustLoad() *Config {
 	configPath := os.Getenv("CONFIG_PATH")
 
 	if configPath == "" {
-		fmt.Fprintf(os.Stderr, "CONFIG_PATH environment variable is not set")
-		os.Exit(1)
+		log.Fatal("CONFIG_PATH environment variable is not set")
 	}
 
 	// Check existing CONFIG_PATH
 	if _, err := os.Stat(configPath); err != nil {
-		fmt.Fprintf(os.Stderr, "error opening config file: %s", err)
-		os.Exit(1)
+		log.Fatalf("failed to open config file: %s", err)
 	}
 	var cfg Config
 
+	// Reading configuration
 	err := cleanenv.ReadConfig(configPath, &cfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error reading config file: %s", err)
-		os.Exit(1)
+		log.Fatalf("failed to read config file: %s", err)
 	}
 
 	return &cfg
