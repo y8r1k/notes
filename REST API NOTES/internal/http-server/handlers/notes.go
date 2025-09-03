@@ -43,18 +43,8 @@ func (a *App) HandleAllNoteGET(w http.ResponseWriter, r *http.Request) {
 		notesToResponse[i] = dto.DomainToResponse(note)
 	}
 
-	// Marshal data
-	b, err := json.Marshal(notesToResponse)
-	if err != nil {
-		log.Error("failed to marshal response",
-			sl.Err(err),
-		)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
 	// Write response
-	w.Write(b)
+	writeJSON(w, http.StatusOK, notesToResponse)
 }
 
 func (a *App) handleNoteGET(w http.ResponseWriter, r *http.Request) {
@@ -95,17 +85,8 @@ func (a *App) handleNoteGET(w http.ResponseWriter, r *http.Request) {
 	// Convert data to response
 	noteToResponse := dto.DomainToResponse(noteDomain)
 
-	// Marshal data
-	b, err := json.Marshal(noteToResponse)
-	if err != nil {
-		log.Error("failed to marshal response",
-			slog.Int64("id", id),
-			sl.Err(err),
-		)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-	w.Write(b)
+	// Write response
+	writeJSON(w, http.StatusOK, noteToResponse)
 }
 
 func (a *App) handleNotePOST(w http.ResponseWriter, r *http.Request) {
@@ -148,18 +129,9 @@ func (a *App) handleNotePOST(w http.ResponseWriter, r *http.Request) {
 	// Convert data to response
 	noteToResponse := dto.DomainToResponse(noteDomain)
 
-	// Marshal data
-	resultNoteByte, err := json.Marshal(noteToResponse)
-	if err != nil {
-		log.Error("failed to marshal response",
-			slog.Int64("id", noteDomain.ID),
-			sl.Err(err),
-		)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusCreated)
-	w.Write(resultNoteByte)
+	// Write response
+	writeJSON(w, http.StatusCreated, noteToResponse)
+
 }
 
 func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
@@ -216,17 +188,8 @@ func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 	// Convert data to response
 	noteToResponse := dto.DomainToResponse(noteDomain)
 
-	// Marshaling data
-	resultNoteByte, err := json.Marshal(noteToResponse)
-	if err != nil {
-		log.Error("failed to marshal response",
-			slog.Int64("id", noteDomain.ID),
-			sl.Err(err),
-		)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-	w.Write(resultNoteByte)
+	// Write response
+	writeJSON(w, http.StatusOK, noteToResponse)
 }
 
 func (a *App) handleNoteDELETE(w http.ResponseWriter, r *http.Request) {
@@ -268,12 +231,7 @@ func (a *App) handleNoteDELETE(w http.ResponseWriter, r *http.Request) {
 		slog.Int64("id", id),
 	)
 
-	message := "Successful deletion"
-	result := []byte(message)
-
-	// Можно было добавить статус, но оставим так
-	// w.WriteHeader(http.StatusNoContent)
-	w.Write(result)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *App) HandleNoteRequest(w http.ResponseWriter, r *http.Request) {
