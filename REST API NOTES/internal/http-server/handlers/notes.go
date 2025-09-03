@@ -2,13 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"notes/internal/http-server/dto"
 	"notes/internal/logger/sl"
 	"notes/internal/storage"
-	"strconv"
-	"strings"
 )
 
 type App struct {
@@ -71,24 +70,13 @@ func (a *App) handleNoteGET(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Get id from url
-	parts := strings.Split(r.URL.Path, "/")
-
-	if len(parts) != 3 || parts[1] != "notes" {
-		log.Error("invalid URL",
-			slog.String("path", r.URL.Path),
-		)
-		http.Error(w, "Invalid URL", http.StatusBadRequest)
-		return
-	}
-
-	idStr := parts[2]
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseID(r)
 	if err != nil {
-		log.Error("invalid id",
-			slog.String("id", idStr),
-			sl.Err(err),
-		)
-		http.Error(w, "ID must be a number", http.StatusBadRequest)
+		if errors.Is(err, ErrInvalidURLID) {
+			http.Error(w, "Invalid ID", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -187,24 +175,13 @@ func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Get id from url
-	parts := strings.Split(r.URL.Path, "/")
-
-	if len(parts) != 3 || parts[1] != "notes" {
-		log.Error("invalid URL",
-			slog.String("path", r.URL.Path),
-		)
-		http.Error(w, "Invalid URL", http.StatusBadRequest)
-		return
-	}
-
-	idStr := parts[2]
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseID(r)
 	if err != nil {
-		log.Error("invalid id",
-			slog.String("id", idStr),
-			sl.Err(err),
-		)
-		http.Error(w, "ID must be a number", http.StatusBadRequest)
+		if errors.Is(err, ErrInvalidURLID) {
+			http.Error(w, "Invalid ID", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -265,24 +242,13 @@ func (a *App) handleNoteDELETE(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Get id from url
-	parts := strings.Split(r.URL.Path, "/")
-
-	if len(parts) != 3 || parts[1] != "notes" {
-		log.Error("invalid URL",
-			slog.String("path", r.URL.Path),
-		)
-		http.Error(w, "Invalid URL", http.StatusBadRequest)
-		return
-	}
-
-	idStr := parts[2]
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := parseID(r)
 	if err != nil {
-		log.Error("invalid id",
-			slog.String("id", idStr),
-			sl.Err(err),
-		)
-		http.Error(w, "ID must be a number", http.StatusBadRequest)
+		if errors.Is(err, ErrInvalidURLID) {
+			http.Error(w, "Invalid ID", http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
