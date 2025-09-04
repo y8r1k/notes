@@ -117,6 +117,13 @@ func (a *App) handleNotePOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate newNote
+	if err := newNote.Validate(); err != nil {
+		log.Warn("validation failed", sl.Err(err))
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Create note-record in db
 	noteDomain, err := a.storage.POSTNote(newNote.CreateRequestToDomain())
 	if err != nil {
@@ -170,6 +177,12 @@ func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 			sl.Err(err),
 		)
 		http.Error(w, "Bad JSON data", http.StatusBadRequest)
+		return
+	}
+
+	if err := changingNote.Validate(); err != nil {
+		log.Warn("validation failed", sl.Err(err))
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
