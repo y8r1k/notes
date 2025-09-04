@@ -27,7 +27,7 @@ func main() {
 
 	log.Info("database connected")
 
-	app := handlers.App{Storage: storage, Log: log}
+	app := handlers.NewApp(storage, log)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/notes/", app.HandleNoteRequest)
 	mux.HandleFunc("/notes", app.HandleAllNoteGET)

@@ -11,14 +11,18 @@ import (
 )
 
 type App struct {
-	Storage storage.NoteStore
-	Log     *slog.Logger
+	storage storage.NoteStore
+	log     *slog.Logger
+}
+
+func NewApp(storage storage.NoteStore, log *slog.Logger) *App {
+	return &App{storage: storage, log: log}
 }
 
 func (a *App) HandleAllNoteGET(w http.ResponseWriter, r *http.Request) {
 	const op = "internal.http-server.handlers.HandleAllNoteGET"
 
-	log := a.Log.With(
+	log := a.log.With(
 		slog.String("op", op),
 	)
 
@@ -28,7 +32,7 @@ func (a *App) HandleAllNoteGET(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Get data from db
-	notesDomain, err := a.Storage.GETAllNotes()
+	notesDomain, err := a.storage.GETAllNotes()
 	if err != nil {
 		log.Error("db: get notes failed",
 			sl.Err(err),
@@ -50,7 +54,7 @@ func (a *App) HandleAllNoteGET(w http.ResponseWriter, r *http.Request) {
 func (a *App) handleNoteGET(w http.ResponseWriter, r *http.Request) {
 	const op = "internal.http-server.handlers.handleNoteGET"
 
-	log := a.Log.With(
+	log := a.log.With(
 		slog.String("op", op),
 	)
 
@@ -71,7 +75,7 @@ func (a *App) handleNoteGET(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get data from db
-	noteDomain, err := a.Storage.GETNote(id)
+	noteDomain, err := a.storage.GETNote(id)
 	if err != nil {
 		// Здесь по хорошему нужно добавить обработку ошибки ErrNoteNotFound
 		log.Error("db: get note failed",
@@ -92,7 +96,7 @@ func (a *App) handleNoteGET(w http.ResponseWriter, r *http.Request) {
 func (a *App) handleNotePOST(w http.ResponseWriter, r *http.Request) {
 	const op = "internal.http-server.handlers.handleNotePOST"
 
-	log := a.Log.With(
+	log := a.log.With(
 		slog.String("op", op),
 	)
 
@@ -114,7 +118,7 @@ func (a *App) handleNotePOST(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create note-record in db
-	noteDomain, err := a.Storage.POSTNote(newNote.CreateRequestToDomain())
+	noteDomain, err := a.storage.POSTNote(newNote.CreateRequestToDomain())
 	if err != nil {
 		// здесь можно отдельно обрабатывать ErrNoteExists
 		log.Error("db: create note failed", sl.Err(err))
@@ -137,7 +141,7 @@ func (a *App) handleNotePOST(w http.ResponseWriter, r *http.Request) {
 func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 	const op = "internal.http-server.handlers.handleNotePUT"
 
-	log := a.Log.With(
+	log := a.log.With(
 		slog.String("op", op),
 	)
 
@@ -170,7 +174,7 @@ func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Change data in db
-	noteDomain, err := a.Storage.PUTNote(changingNote.ChangeRequestToDomain(id))
+	noteDomain, err := a.storage.PUTNote(changingNote.ChangeRequestToDomain(id))
 	if err != nil {
 		//  здесь можно отдельно обрабатывать ErrNoteNotFound и ErrNoteExists
 		log.Error("db: change note failed",
@@ -195,7 +199,7 @@ func (a *App) handleNotePUT(w http.ResponseWriter, r *http.Request) {
 func (a *App) handleNoteDELETE(w http.ResponseWriter, r *http.Request) {
 	const op = "internal.http-server.handlers.handleNoteDELETE"
 
-	log := a.Log.With(
+	log := a.log.With(
 		slog.String("op", op),
 	)
 
@@ -216,7 +220,7 @@ func (a *App) handleNoteDELETE(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete data from db
-	err = a.Storage.DELETENote(id)
+	err = a.storage.DELETENote(id)
 	if err != nil {
 		// здесь можно отдельно обрабатывать ErrNoteNotFound
 		log.Error("db: delete note failed",
